@@ -1,0 +1,34 @@
+name: Fetch Frieren Photos
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: 0 */3 * * *
+
+jobs:
+  finder:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Make Script Executable
+        run: chmod +x download_photos.sh
+
+      - name: Execute Download Script
+        run: ./parser.sh
+
+      - name: Commit and Push Changes
+        run: |
+          git config --global user.name "${{ github.actor }}"
+          git config --global user.email "${{ github.actor }}@://github.com"
+          
+          if [ -n "$(git status --porcelain frieren_photos)" ]; then
+            git add frieren_photos/
+            git commit -m "feat: add new photos"
+            git push
+          fi
