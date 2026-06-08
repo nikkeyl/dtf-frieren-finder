@@ -8,7 +8,6 @@ TARGET_DIR="frieren_photos"
 echo "気ままなエルフを探しています..."
 
 rm -f "$TMP_HTML"
-rm -rf "$TARGET_DIR"
 mkdir -p "$TARGET_DIR"
 
 curl -s -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)" "$URL" -o "$TMP_HTML"
