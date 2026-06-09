@@ -22,16 +22,24 @@ jobs:
       - name: Execute Download Script
         run: ./parser.sh
 
+      - name: Check For New Photos
+        id: check_changes
+        run: |
+          if [ -n "$(git status --porcelain frieren_photos)" ]; then
+            echo "found=true" >> $GITHUB_OUTPUT
+          else
+            echo "found=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Find Latest Photo
         id: latest_file
-        if: success()
+        if: steps.check_changes.outputs.found == 'true'
         run: |
           LATEST=$(ls -t frieren_photos/* | head -n 1)
-          echo "Найден файл: $LATEST"
           echo "path=$LATEST" >> $GITHUB_OUTPUT
 
       - name: Send Photos via Apple Mail
-        if: success()
+        if: steps.check_changes.outputs.found == 'true'
         uses: dawidd6/action-send-mail@42942bc2f8fba4e611b459a018967a6a7c78c68c
         with:
           server_address: smtp.mail.me.com
@@ -55,8 +63,7 @@ jobs:
         if: always()
         run: |
           git config --global user.name "${{ github.actor }}"
-          # Исправлена опечатка в email (убрано ://)
-          git config --global user.email "${{ github.actor }}@users.noreply.github.com"
+          git config --global user.email "${{ github.actor }}@://github.com"
           
           if [ -n "$(git status --porcelain frieren_photos)" ]; then
             git add frieren_photos/
