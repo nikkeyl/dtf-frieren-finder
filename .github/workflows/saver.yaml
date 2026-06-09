@@ -16,30 +16,44 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
 
+      - name: Prepare Workspace
+        run: mkdir -p frieren_photos mail_attachments
+
       - name: Make Script Executable
         run: chmod +x parser.sh
 
       - name: Execute Download Script
         run: ./parser.sh
 
-      - name: Check For New Photos
-        id: check_changes
+      - name: Filter New Photos
+        id: filter_logic
         run: |
-          if [ -n "$(git status --porcelain frieren_photos)" ]; then
-            echo "found=true" >> $GITHUB_OUTPUT
+          touch last_sent.txt
+          
+          HAS_NEW=false
+
+          for file in frieren_photos/*; do
+            [ -f "$file" ] || continue
+
+            filename=$(basename "$file")
+
+            if ! grep -qxF "$filename" last_sent.txt; then
+              cp "$file" mail_attachments/
+
+              echo "$filename" >> last_sent.txt
+
+              HAS_NEW=true
+            fi
+          done
+
+          if [ "$HAS_NEW" = true ]; then
+            echo "send_mail=true" >> $GITHUB_OUTPUT
           else
-            echo "found=false" >> $GITHUB_OUTPUT
+            echo "send_mail=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Find Latest Photo
-        id: latest_file
-        if: steps.check_changes.outputs.found == 'true'
-        run: |
-          LATEST=$(ls -t frieren_photos/* | head -n 1)
-          echo "path=$LATEST" >> $GITHUB_OUTPUT
-
       - name: Send Photos via Apple Mail
-        if: steps.check_changes.outputs.found == 'true'
+        if: steps.filter_logic.outputs.send_mail == 'true'
         uses: dawidd6/action-send-mail@42942bc2f8fba4e611b459a018967a6a7c78c68c
         with:
           server_address: smtp.mail.me.com
@@ -57,7 +71,7 @@ jobs:
             このメールにファイルを添付してお送りします。
             
             よろしくお願いします！
-          attachments: ${{ steps.latest_file.outputs.path }}
+          attachments: mail_attachments/*
 
       - name: Commit and Push Changes
         if: always()
@@ -65,8 +79,8 @@ jobs:
           git config --global user.name "${{ github.actor }}"
           git config --global user.email "${{ github.actor }}@://github.com"
           
-          if [ -n "$(git status --porcelain frieren_photos)" ]; then
-            git add frieren_photos/
-            git commit -m "feat: add new photos"
+          if [ -n "$(git status --porcelain frieren_photos last_sent.txt)" ]; then
+            git add frieren_photos/ last_sent.txt
+            git commit -m "feat: add new photos and update sent history log"
             git push
           fi
