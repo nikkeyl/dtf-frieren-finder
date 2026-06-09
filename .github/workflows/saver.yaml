@@ -22,7 +22,29 @@ jobs:
       - name: Execute Download Script
         run: ./parser.sh
 
+      - name: Send Photos via Apple Mail
+        if: success()
+        uses: dawidd6/action-send-mail@42942bc2f8fba4e611b459a018967a6a7c78c68c
+        with:
+          server_address: smtp.mail.me.com
+          server_port: 587
+          secure: false
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "フリーレンの新着写真！"
+          to: ${{ secrets.RECEIVER_EMAIL }}
+          from: GitHub Actions Finder <${{ secrets.MAIL_USERNAME }}>
+          body: |
+            こんにちは！
+            
+            スクリプトが更新を確認し、フリーレンの新しい写真をダウンロードしました。
+            このメールにファイルを添付してお送りします。
+            
+            よろしくお願いします！
+          attachments: frieren_photos/*
+
       - name: Commit and Push Changes
+        if: always()
         run: |
           git config --global user.name "${{ github.actor }}"
           git config --global user.email "${{ github.actor }}@://github.com"
