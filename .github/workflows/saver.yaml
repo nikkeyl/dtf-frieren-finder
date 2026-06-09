@@ -22,6 +22,14 @@ jobs:
       - name: Execute Download Script
         run: ./parser.sh
 
+      - name: Find Latest Photo
+        id: latest_file
+        if: success()
+        run: |
+          LATEST=$(ls -t frieren_photos/* | head -n 1)
+          echo "Найден файл: $LATEST"
+          echo "path=$LATEST" >> $GITHUB_OUTPUT
+
       - name: Send Photos via Apple Mail
         if: success()
         uses: dawidd6/action-send-mail@42942bc2f8fba4e611b459a018967a6a7c78c68c
@@ -41,13 +49,14 @@ jobs:
             このメールにファイルを添付してお送りします。
             
             よろしくお願いします！
-          attachments: frieren_photos/*
+          attachments: ${{ steps.latest_file.outputs.path }}
 
       - name: Commit and Push Changes
         if: always()
         run: |
           git config --global user.name "${{ github.actor }}"
-          git config --global user.email "${{ github.actor }}@://github.com"
+          # Исправлена опечатка в email (убрано ://)
+          git config --global user.email "${{ github.actor }}@users.noreply.github.com"
           
           if [ -n "$(git status --porcelain frieren_photos)" ]; then
             git add frieren_photos/
