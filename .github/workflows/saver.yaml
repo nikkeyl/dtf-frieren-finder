@@ -32,7 +32,7 @@ jobs:
           username: ${{ secrets.MAIL_USERNAME }}
           password: ${{ secrets.MAIL_PASSWORD }}
           subject: "フリーレンの新着写真！"
-          to: ${{ secrets.RECEIVER_EMAIL }}
+          to: ${{ secrets.MAIL_USERNAME }}
           from: GitHub Actions Finder <${{ secrets.MAIL_USERNAME }}>
           body: |
             こんにちは！
