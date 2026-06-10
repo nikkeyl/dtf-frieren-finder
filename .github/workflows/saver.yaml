@@ -1,4 +1,4 @@
-name: Fetch Frieren Photos
+name: Fetch Photos
 
 on:
   workflow_dispatch:
@@ -6,7 +6,7 @@ on:
     - cron: 0 * * * *
 
 jobs:
-  finder:
+  fetcher:
     runs-on: ubuntu-latest
 
     permissions:
@@ -22,7 +22,7 @@ jobs:
       - name: Make Script Executable
         run: chmod +x parser.sh
 
-      - name: Execute Download Script
+      - name: Execute Parser Script
         run: ./parser.sh
 
       - name: Filter New Photos
@@ -74,7 +74,7 @@ jobs:
           attachments: mail_attachments/*
 
       - name: Commit and Push Changes
-        if: always()
+        if: steps.filter_logic.outputs.send_mail == 'true'
         run: |
           git config --global user.name "${{ github.actor }}"
           git config --global user.email "${{ github.actor }}@://github.com"
