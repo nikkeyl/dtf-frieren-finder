@@ -32,9 +32,11 @@ grep -oP '(?s)<article.*?</article>' "$TMP_HTML" | while read -r post; do
         if echo "$post" | grep -q 'content__read-more'; then
             echo "スポイラーの裏に隠された宝があります。全文を取得します..."
 
-            post_url=$(echo "$post" | grep -oP 'href="(https://dtf\.ru/[^"]+)"' | grep -oP 'https://[^"]+' | head -1)
+            post_url=$(echo "$post" | grep -oP 'href="(https://dtf\.ru/[^/]+/[0-9]+-[^"]+)"' | grep -oP 'https://[^"]+' | head -1)
 
             if [ -n "$post_url" ]; then
+                echo "完全なポストを取得します: $post_url"
+
                 curl -s -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)" "$post_url" -o "$TMP_POST"
                 
                 source_html="$TMP_POST"
