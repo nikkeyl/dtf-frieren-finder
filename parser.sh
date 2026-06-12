@@ -21,13 +21,12 @@ fi
 
 post_index=0
 
-grep -oP '(?s)<article.*?</article>' "$TMP_HTML" | while read -r post; do
+awk 'BEGIN{RS="</article>"; ORS="\0"} /<article/{print $0 "</article>"}' "$TMP_HTML" | \
+while IFS= read -r -d '' post; do
     post_index=$((post_index + 1))
 
     if echo "$post" | grep -q "$TAG"; then
-        echo "--------------------------------------------------"
         echo "静かな喜びのひととき。この物語で #$post_index 番目の $TAG を見つけました"
-        echo "--------------------------------------------------"
 
         if echo "$post" | grep -q 'content__read-more'; then
             echo "スポイラーの裏に隠された宝があります。全文を取得します..."
@@ -36,26 +35,24 @@ grep -oP '(?s)<article.*?</article>' "$TMP_HTML" | while read -r post; do
 
             if [ -n "$post_url" ]; then
                 echo "完全なポストを取得します: $post_url"
-
-                curl -s -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)" "$post_url" -o "$TMP_POST"
                 
-                source_html="$TMP_POST"
+                curl -s -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)" "$post_url" -o "$TMP_POST"
+
+                urls=$(grep -o 'https://leonardo\.osnova\.io/[^" ]*' "$TMP_POST" |
+                    sed 's|/-/scale_crop/.*||' |
+                    awk '!seen[$0]++'
+                )
+
+                rm -f "$TMP_POST"
             else
                 echo "URLの抽出に失敗しました。元のコンテンツを使用します。"
 
-                source_html=""
+                urls=$(echo "$post" |
+                    grep -o 'https://leonardo\.osnova\.io/[^" ]*' |
+                    sed 's|/-/scale_crop/.*||' |
+                    awk '!seen[$0]++'
+                )
             fi
-        else
-            source_html=""
-        fi
-
-        if [ -n "$source_html" ]; then
-            urls=$(grep -o 'https://leonardo\.osnova\.io/[^" ]*' "$source_html" |
-                sed 's|/-/scale_crop/.*||' |
-                awk '!seen[$0]++'
-            )
-
-            rm -f "$source_html"
         else
             urls=$(echo "$post" |
                 grep -o 'https://leonardo\.osnova\.io/[^" ]*' |
@@ -84,7 +81,5 @@ grep -oP '(?s)<article.*?</article>' "$TMP_HTML" | while read -r post; do
         exit 0
     fi
 done
-
-rm -f "$TMP_HTML"
 
 rm -f "$TMP_HTML"
