@@ -1,43 +1,82 @@
-#!/bin/bash
+#!/bin/sh
 
-URL="https://dtf.ru/lx_ix"
+set -eu
+
+API_BASE="https://api.dtf.ru/v2.10"
+SUBSITE_URI="/lx_ix"
 TAG="#иногдафрирен"
-TMP_HTML="dtf-lxix.html"
+TMP_JSON="dtf-lxix.json"
 TARGET_DIR="frieren_photos"
 
-rm -f "$TMP_HTML"
-mkdir -p "$TARGET_DIR"
-
-curl -s -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)" "$URL" -o "$TMP_HTML"
-
-if [ ! -s "$TMP_HTML" ]; then
+if ! command -v jq >/dev/null 2>&1; then
+    echo "Error: jq is required to parse DTF JSON" >&2
     exit 1
 fi
 
-post_index=0
+cleanup() {
+    rm -f "$TMP_JSON"
+}
 
-grep -oP '(?s)<article.*?</article>' "$TMP_HTML" | while read -r post; do
-    post_index=$((post_index + 1))
+trap cleanup 0 1 2 15
 
-    if echo "$post" | grep -q "$TAG"; then
-        urls=$(echo "$post" |
-            grep -o 'https://leonardo\.osnova\.io/[^" ]*' |
-            sed 's|/-/scale_crop/.*||' |
-            awk '!seen[$0]++'
-        )
+mkdir -p "$TARGET_DIR"
 
-        if [ -n "$urls" ]; then
-            for url in $urls; do
-                filename=$(basename "$url").jpg
+encoded_subsite_uri="$(printf '%s' "$SUBSITE_URI" | jq -sRr @uri)"
 
-                curl -s -L "$url" -o "$TARGET_DIR/$filename"
-            done
-        fi
+curl -fsSL --retry 2 \
+    -A "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)" \
+    "$API_BASE/subsite?uri=$encoded_subsite_uri" -o "$TMP_JSON"
 
-        rm -f "$TMP_HTML"
+SUBSITE_ID="$(jq -er '.result.id' "$TMP_JSON")"
+cursor=""
 
-        exit 0
+while :; do
+    if [ -n "$cursor" ]; then
+        encoded_cursor="$(printf '%s' "$cursor" | jq -sRr @uri)"
+        timeline_url="$API_BASE/timeline?subsitesIds=$SUBSITE_ID&cursor=$encoded_cursor&sorting=new"
+    else
+        timeline_url="$API_BASE/timeline?subsitesIds=$SUBSITE_ID&sorting=new"
     fi
-done
 
-rm -f "$TMP_HTML"
+    curl -fsSL --retry 2 \
+        -A "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)" \
+        "$timeline_url" -o "$TMP_JSON"
+
+    result="$(jq -c --arg tag "$TAG" '
+        [
+            .result.items[]?.data
+            | select(any(.blocks[]? | .. | strings; contains($tag)))
+            | {
+                found: true,
+                uuids: [
+                    .blocks[]?
+                    | ..
+                    | objects
+                    | select(.type? == "image")
+                    | .data.uuid?
+                    | select(type == "string")
+                ] | unique
+            }
+        ][0] // {found: false, uuids: []}
+    ' "$TMP_JSON")"
+
+    found="$(printf '%s' "$result" | jq -r '.found')"
+    if [ "$found" = "true" ]; then
+        printf '%s' "$result" |
+            jq -r '.uuids[]? | "https://leonardo.osnova.io/\(.)"' |
+            while IFS= read -r url; do
+                [ -n "$url" ] || continue
+
+                filename="$(basename "$url").jpg"
+                curl -fsSL --retry 2 "$url" -o "$TARGET_DIR/$filename"
+            done
+        break
+    fi
+
+    next_cursor="$(jq -r '.result.cursor // empty' "$TMP_JSON")"
+    if [ -z "$next_cursor" ] || [ "$next_cursor" = "$cursor" ]; then
+        break
+    fi
+
+    cursor="$next_cursor"
+done
