@@ -39,12 +39,16 @@ images only; email delivery and sent-file tracking belong to the workflow.
 In your own repository or fork:
 
 1. Enable GitHub Actions.
-2. Add the repository secrets `MAIL_USERNAME` and `MAIL_PASSWORD`.
-3. Use an iCloud Mail address for `MAIL_USERNAME` and an app-specific password
+
+1. Add the repository secrets `MAIL_USERNAME` and `MAIL_PASSWORD`.
+
+1. Use an iCloud Mail address for `MAIL_USERNAME` and an app-specific password
    for `MAIL_PASSWORD`.
-4. Allow the workflow to write repository contents so it can commit downloaded
+
+1. Allow the workflow to write repository contents so it can commit downloaded
    images and sent-file history.
-5. Open **Actions → Fetch Photos → Run workflow** to test a manual run.
+
+1. Open **Actions → Fetch Photos → Run workflow** to test a manual run.
 
 The workflow connects to `smtp.mail.me.com` on port `587` and sends mail
 to the address stored in `MAIL_USERNAME`. To use a different provider or
@@ -65,6 +69,7 @@ The work is split between two files:
 
 - `parser.sh` resolves the DTF subsite, reads the timeline, finds the first
   matching post, and downloads its images.
+
 - `.github/workflows/fetcher-photos.yaml` selects files missing from
   `last_sent.txt`, sends them as attachments, and commits the updated state.
 
@@ -79,12 +84,17 @@ automation itself uses API requests and string matching, without an AI model.
 ## Trade-offs and limitations
 
 - Each run processes the first matching post, rather than every unseen post.
+
 - Matching checks whether text in a post's blocks contains the tag string;
   it does not classify images or recognize Frieren visually.
+
 - The script depends on the current DTF API and image-host response formats.
+
 - Images accumulate in Git, increasing repository size over time.
+
 - Filename tracking is not an exactly-once delivery guarantee. A successful
   email followed by a failed Git push can lead to a repeated notification.
+
 - Downloaded files use a `.jpg` extension without image-format conversion.
 
 ## Verification
