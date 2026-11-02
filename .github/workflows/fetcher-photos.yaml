@@ -1,7 +1,6 @@
 name: Fetch Photos
 
 on:
-  workflow_dispatch:
   schedule:
     - cron: 0 * * * *
 
