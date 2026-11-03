@@ -4,6 +4,10 @@ on:
   schedule:
     - cron: 0 * * * *
 
+concurrency:
+  group: fetch-photos
+  cancel-in-progress: false
+
 jobs:
   fetcher:
     runs-on: ubuntu-latest
@@ -28,7 +32,7 @@ jobs:
         id: filter_logic
         run: |
           touch last_sent.txt
-          
+
           HAS_NEW=false
 
           for file in frieren_photos/*; do
@@ -65,21 +69,21 @@ jobs:
           from: GitHub Actions Finder <${{ secrets.MAIL_USERNAME }}>
           body: |
             こんにちは！
-            
+
             スクリプトが更新を確認し、フリーレンの新しい写真をダウンロードしました。
             このメールにファイルを添付してお送りします。
-            
+
             よろしくお願いします！
           attachments: mail_attachments/*
 
-      - name: Commit and Push Changes
-        if: steps.filter_logic.outputs.send_mail == 'true'
+      - name: Commit Sent-File History
+        if: ${{ success() && steps.filter_logic.outputs.send_mail == 'true' }}
         run: |
-          git config --global user.name "${{ github.actor }}"
-          git config --global user.email "${{ github.actor }}@://github.com"
-          
-          if [ -n "$(git status --porcelain frieren_photos last_sent.txt)" ]; then
-            git add frieren_photos/ last_sent.txt
-            git commit -m "feat: add new photos and update sent history log"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if [ -n "$(git status --porcelain -- last_sent.txt)" ]; then
+            git add -- last_sent.txt
+            git commit -m "chore: update sent image history"
             git push
           fi

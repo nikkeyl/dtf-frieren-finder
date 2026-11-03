@@ -14,9 +14,14 @@ and uses a scheduled workflow to email files absent from the sent-file history.
 ## Features
 
 - Fetches posts through the DTF API using `curl` and `jq`.
+
 - Follows timeline pagination until it finds a matching post or reaches the end.
-- Saves images to `frieren_photos/`, using their UUIDs as filenames.
+
+- Downloads images to a Git-ignored `frieren_photos/` directory, using their
+  UUIDs as filenames.
+
 - Tracks previously sent filenames in `last_sent.txt`.
+
 - Runs on an hourly schedule through GitHub Actions.
 
 ## Getting started
@@ -31,8 +36,9 @@ cd dtf-frieren-finder
 sh parser.sh
 ```
 
-Images are saved to `frieren_photos/`. Running the script locally downloads
-images only; email delivery and sent-file tracking belong to the workflow.
+Images are saved to `frieren_photos/`, which is ignored by Git. Running the
+script locally downloads images only; email delivery and sent-file tracking
+belong to the workflow.
 
 ### Configure email delivery
 
@@ -45,8 +51,8 @@ In your own repository or fork:
 1. Use an iCloud Mail address for `MAIL_USERNAME` and an app-specific password
    for `MAIL_PASSWORD`.
 
-1. Allow the workflow to write repository contents so it can commit downloaded
-   images and sent-file history.
+1. Allow the workflow to write repository contents so it can update
+   `last_sent.txt` after a successful email.
 
 The workflow connects to `smtp.mail.me.com` on port `587` and sends mail
 to the address stored in `MAIL_USERNAME`. To use a different provider or
@@ -55,8 +61,8 @@ recipient, update `.github/workflows/fetcher-photos.yaml`.
 See Apple's [iCloud Mail server settings](https://support.apple.com/en-us/102525)
 for the SMTP authentication requirements.
 
-Before the first run in a fork, review `frieren_photos/` and `last_sent.txt`:
-the inherited files and history affect which images are considered new.
+Before the first run in a fork, review `last_sent.txt`: the inherited delivery
+history determines which filenames are considered new.
 
 The schedule is `0 * * * *`: once per hour, at minute zero, in UTC.
 Actual execution depends on GitHub Actions scheduling and workflow availability.
@@ -69,15 +75,20 @@ The work is split between two files:
   matching post, and downloads its images.
 
 - `.github/workflows/fetcher-photos.yaml` selects files missing from
-  `last_sent.txt`, sends them as attachments, and commits the updated state.
+  `last_sent.txt`, sends them as attachments, and commits only the delivery
+  history after the email succeeds.
 
 The feed, tag, and download directory are configured by constants near the
 top of `parser.sh`: `SUBSITE_URI`, `TAG`, and `TARGET_DIR`.
 If you change the download directory, update the workflow paths as well.
 
-Git stores both the downloaded images and delivery history, avoiding a
-separate database. The AI badge identifies AI-assisted development; the
-automation itself uses API requests and string matching, without an AI model.
+Git stores delivery history only, avoiding a separate database. Downloads and
+email attachments remain in the temporary runner workspace and are never
+staged by the workflow. Scheduled runs are serialized to avoid concurrent
+updates to the sent-file history.
+
+The AI badge identifies AI-assisted development; the automation itself uses
+API requests and string matching, without an AI model.
 
 ## Trade-offs and limitations
 
@@ -88,7 +99,8 @@ automation itself uses API requests and string matching, without an AI model.
 
 - The script depends on the current DTF API and image-host response formats.
 
-- Images accumulate in Git, increasing repository size over time.
+- Downloaded images are not archived by the workflow; the runner workspace is
+  discarded after the job. Local runs leave downloaded files on your machine.
 
 - Filename tracking is not an exactly-once delivery guarantee. A successful
   email followed by a failed Git push can lead to a repeated notification.
@@ -97,4 +109,8 @@ automation itself uses API requests and string matching, without an AI model.
 
 ## License
 
-[MIT](./LICENSE)
+The source code is licensed under [MIT](./LICENSE).
+
+Images downloaded from DTF are third-party content and are excluded from the
+MIT license. Their use remains subject to the rights holders' terms. Downloaded
+images are not stored in the current repository tree.
