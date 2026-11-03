@@ -15,16 +15,17 @@ jobs:
     permissions:
       contents: write
 
-    env:
-      TARGET_DIR: ${{ runner.temp }}/dtf-frieren-photos
-      ATTACHMENTS_DIR: ${{ runner.temp }}/dtf-frieren-attachments
-
     steps:
       - name: Checkout Repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
       - name: Prepare Workspace
-        run: mkdir -p "$TARGET_DIR" "$ATTACHMENTS_DIR"
+        run: |
+          TARGET_DIR="$RUNNER_TEMP/dtf-frieren-photos"
+          ATTACHMENTS_DIR="$RUNNER_TEMP/dtf-frieren-attachments"
+          mkdir -p "$TARGET_DIR" "$ATTACHMENTS_DIR"
+          printf 'TARGET_DIR=%s\nATTACHMENTS_DIR=%s\n' \
+            "$TARGET_DIR" "$ATTACHMENTS_DIR" >> "$GITHUB_ENV"
 
       - name: Make Script Executable
         run: chmod +x parser.sh
