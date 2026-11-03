@@ -14,21 +14,16 @@ and uses a scheduled workflow to email files absent from the sent-file history.
 ## Features
 
 - Fetches posts through the DTF API using `curl` and `jq`.
-
 - Follows timeline pagination until it finds a matching post or reaches the end.
-
-- Downloads images to a Git-ignored `frieren_photos/` directory, using their
-  UUIDs as filenames.
-
+- Downloads images to a temporary directory, using their UUIDs as filenames.
 - Tracks previously sent filenames in `last_sent.txt`.
-
 - Runs on an hourly schedule through GitHub Actions.
 
 ## Getting started
 
 ### Run the downloader locally
 
-Requirements: Git, a POSIX shell, `curl`, and `jq`.
+Requirements: Git, a POSIX shell, `curl`, `jq`, and `mktemp`.
 
 ```sh
 git clone https://github.com/nikkeyl/dtf-frieren-finder.git
@@ -36,9 +31,10 @@ cd dtf-frieren-finder
 sh parser.sh
 ```
 
-Images are saved to `frieren_photos/`, which is ignored by Git. Running the
-script locally downloads images only; email delivery and sent-file tracking
-belong to the workflow.
+By default, images are saved to a new system temporary directory. The script
+prints its path. Set `TARGET_DIR` to choose another download location. Running
+locally downloads images only; email delivery and sent-file tracking belong to
+the workflow.
 
 ### Configure email delivery
 
@@ -78,12 +74,13 @@ The work is split between two files:
   `last_sent.txt`, sends them as attachments, and commits only the delivery
   history after the email succeeds.
 
-The feed, tag, and download directory are configured by constants near the
-top of `parser.sh`: `SUBSITE_URI`, `TAG`, and `TARGET_DIR`.
-If you change the download directory, update the workflow paths as well.
+The feed and tag are configured near the top of `parser.sh` through
+`SUBSITE_URI` and `TAG`. The `TARGET_DIR` environment variable controls the
+download location. In GitHub Actions, downloads and attachments use
+`runner.temp` directories outside the repository checkout.
 
 Git stores delivery history only, avoiding a separate database. Downloads and
-email attachments remain in the temporary runner workspace and are never
+email attachments remain in the runner's temporary directories and are never
 staged by the workflow. Scheduled runs are serialized to avoid concurrent
 updates to the sent-file history.
 
@@ -99,8 +96,9 @@ API requests and string matching, without an AI model.
 
 - The script depends on the current DTF API and image-host response formats.
 
-- Downloaded images are not archived by the workflow; the runner workspace is
-  discarded after the job. Local runs leave downloaded files on your machine.
+- Downloaded images are not archived by the workflow; the runner removes its
+  temporary files after the job. Local runs leave downloads in the selected
+  temporary or custom directory.
 
 - Filename tracking is not an exactly-once delivery guarantee. A successful
   email followed by a failed Git push can lead to a repeated notification.

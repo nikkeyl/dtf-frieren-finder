@@ -15,12 +15,16 @@ jobs:
     permissions:
       contents: write
 
+    env:
+      TARGET_DIR: ${{ runner.temp }}/dtf-frieren-photos
+      ATTACHMENTS_DIR: ${{ runner.temp }}/dtf-frieren-attachments
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
       - name: Prepare Workspace
-        run: mkdir -p frieren_photos mail_attachments
+        run: mkdir -p "$TARGET_DIR" "$ATTACHMENTS_DIR"
 
       - name: Make Script Executable
         run: chmod +x parser.sh
@@ -35,13 +39,13 @@ jobs:
 
           HAS_NEW=false
 
-          for file in frieren_photos/*; do
+          for file in "$TARGET_DIR"/*; do
             [ -f "$file" ] || continue
 
             filename=$(basename "$file")
 
             if ! grep -qxF "$filename" last_sent.txt; then
-              cp "$file" mail_attachments/
+              cp "$file" "$ATTACHMENTS_DIR/"
 
               echo "$filename" >> last_sent.txt
 
@@ -74,7 +78,7 @@ jobs:
             このメールにファイルを添付してお送りします。
 
             よろしくお願いします！
-          attachments: mail_attachments/*
+          attachments: ${{ env.ATTACHMENTS_DIR }}/*
 
       - name: Commit Sent-File History
         if: ${{ success() && steps.filter_logic.outputs.send_mail == 'true' }}

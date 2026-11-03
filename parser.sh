@@ -5,13 +5,13 @@ set -eu
 API_BASE="https://api.dtf.ru/v2.10"
 SUBSITE_URI="/lx_ix"
 TAG="#иногдафрирен"
-TMP_JSON="dtf-lxix.json"
-TARGET_DIR="frieren_photos"
 
 if ! command -v jq >/dev/null 2>&1; then
     echo "Error: jq is required to parse DTF JSON" >&2
     exit 1
 fi
+
+TMP_JSON="$(mktemp "${TMPDIR:-/tmp}/dtf-frieren.XXXXXX")"
 
 cleanup() {
     rm -f "$TMP_JSON"
@@ -19,7 +19,9 @@ cleanup() {
 
 trap cleanup 0 1 2 15
 
+TARGET_DIR="${TARGET_DIR:-$(mktemp -d "${TMPDIR:-/tmp}/dtf-frieren-photos.XXXXXX")}"
 mkdir -p "$TARGET_DIR"
+printf 'Images directory: %s\n' "$TARGET_DIR"
 
 encoded_subsite_uri="$(printf '%s' "$SUBSITE_URI" | jq -sRr @uri)"
 
