@@ -97,20 +97,6 @@ automation itself uses API requests and string matching, without an AI model.
 
 - Downloaded files use a `.jpg` extension without image-format conversion.
 
-## Verification
-
-Check shell syntax without making network requests:
-
-```sh
-sh -n parser.sh
-```
-
-For an end-to-end check, run the workflow manually and inspect the downloaded
-files, email attachments, and commit updating `last_sent.txt`.
-If the next run finds no new filenames, it should skip email delivery.
-
-The repository does not currently include an automated parser test suite.
-
 ## License
 
 [MIT](./LICENSE)
