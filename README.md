@@ -17,7 +17,7 @@ and uses a scheduled workflow to email files absent from the sent-file history.
 - Follows timeline pagination until it finds a matching post or reaches the end.
 - Saves images to `frieren_photos/`, using their UUIDs as filenames.
 - Tracks previously sent filenames in `last_sent.txt`.
-- Supports scheduled and manual runs through GitHub Actions.
+- Runs on an hourly schedule through GitHub Actions.
 
 ## Getting started
 
@@ -47,8 +47,6 @@ In your own repository or fork:
 
 1. Allow the workflow to write repository contents so it can commit downloaded
    images and sent-file history.
-
-1. Open **Actions → Fetch Photos → Run workflow** to test a manual run.
 
 The workflow connects to `smtp.mail.me.com` on port `587` and sends mail
 to the address stored in `MAIL_USERNAME`. To use a different provider or
