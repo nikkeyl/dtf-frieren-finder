@@ -27,7 +27,7 @@ update `last_sent.txt`. Review inherited history before the first run.
 Schedule: `0 * * * *` (hourly, UTC); actual timing depends on GitHub Actions.
 Manual workflow dispatch is disabled.
 
-## Decisions and files
+## Decisions
 
 - `parser.sh` paginates the DTF API until the first matching post. It does not
   process every unseen post or recognize image content.
