@@ -2,48 +2,65 @@
 
 ![AI](https://img.shields.io/badge/AI-red)
 
-AI-assisted shell automation for the first post tagged `#иногдафрирен` in the
-[Lxix DTF feed](https://dtf.ru/lx_ix). No AI model runs in the automation.
+A shell script that downloads images from the first post containing
+`#иногдафрирен` in the [Lxix DTF feed](https://dtf.ru/lx_ix). A scheduled
+GitHub Actions workflow emails images whose filenames are absent from its
+send history.
 
-## Run
+The project was built with AI assistance. It does not run an AI model.
 
-Requires a POSIX shell, `curl`, `jq` and `mktemp`.
+## Download locally
+
+Install `curl` and `jq`, then run the script with a POSIX shell. It also
+uses `mktemp` and standard shell utilities.
 
 ```sh
 sh parser.sh
 ```
 
-Local runs download images only. The script prints a new temporary directory;
-set `TARGET_DIR` to choose another location. `SUBSITE_URI` and `TAG` are defined
-in `parser.sh`.
+The script prints the temporary directory containing the downloads. To
+choose the destination yourself:
 
-## Email configuration
+```sh
+TARGET_DIR=/path/to/downloads sh parser.sh
+```
 
-Enable GitHub Actions in your fork and set `MAIL_USERNAME` to an iCloud Mail
-address and `MAIL_PASSWORD` to its app-specific password. The workflow sends to
-that address through `smtp.mail.me.com:587` and needs `contents: write` to
-update `last_sent.txt`. Review inherited history before the first run.
+Local execution only downloads images. Change `SUBSITE_URI` and `TAG` in
+`parser.sh` to use another feed or search string. Matching uses a text
+substring in the post blocks.
 
-Schedule: `0 * * * *` (hourly, UTC); actual timing depends on GitHub Actions.
-Manual workflow dispatch is disabled.
+## Configure email
 
-## Decisions
+In a fork, enable GitHub Actions and configure these repository secrets:
 
-- `parser.sh` paginates the DTF API until the first matching post. It does not
-  process every unseen post or recognize image content.
+| Secret          | Value                                        |
+| --------------- | -------------------------------------------- |
+| `MAIL_USERNAME` | Your iCloud Mail address; also the recipient |
+| `MAIL_PASSWORD` | An app-specific password for that account    |
 
-- `.github/workflows/fetcher-photos.yaml` selects unseen filenames, emails them
-  and commits only `last_sent.txt` after successful delivery. Runs are
-  serialized.
+`.github/workflows/fetcher-photos.yaml` uses `smtp.mail.me.com:587` and runs
+on `0 * * * *` (hourly, UTC). GitHub may delay scheduled runs. Manual
+dispatch is disabled.
 
-- Images and attachments stay outside the checkout in temporary directories.
-  Git-backed filename history avoids a separate database; an email followed by a
-  failed history push can be sent again.
+The workflow needs `contents: write` to update `last_sent.txt`. Review that
+file before enabling the schedule in a fork: inherited entries suppress
+filenames already in the history.
 
-- Downloads use UUID filenames with `.jpg` extensions without format conversion.
+## Delivery and storage
+
+The parser paginates until it finds the first matching post. It does not
+collect all posts missed between runs. Image files use UUID names and a
+`.jpg` extension without format conversion.
+
+The workflow serializes runs and keeps downloads and attachments in
+temporary directories outside the checkout. After a successful email step it
+commits `last_sent.txt`, which avoids a separate database. If sending
+succeeds but the history push fails, a later run can send the same images
+again. SMTP acceptance does not confirm inbox delivery.
 
 ## License
 
-Source code: [MIT](LICENSE). Downloaded DTF images are third-party content,
-excluded from MIT and subject to their rights holders' terms. They are not
-stored in the repository tree.
+The source code uses [MIT](LICENSE). Downloaded DTF images belong to third
+parties and are excluded from that license. They are not stored in the
+current repository tree; their use remains subject to the rights holders'
+terms.
