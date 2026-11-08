@@ -54,9 +54,12 @@ collect all posts missed between runs. Image files use UUID names and a
 
 The workflow serializes runs and keeps downloads and attachments in
 temporary directories outside the checkout. After a successful email step it
-commits `last_sent.txt`, which avoids a separate database. If sending
-succeeds but the history push fails, a later run can send the same images
-again. SMTP acceptance does not confirm inbox delivery.
+commits `last_sent.txt`, which avoids a separate database.
+
+> [!WARNING]
+>
+> If sending succeeds but the history push fails, a later run can send the
+> same images again. SMTP acceptance does not confirm inbox delivery.
 
 ## License
 
