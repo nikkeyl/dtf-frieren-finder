@@ -62,7 +62,7 @@ jobs:
 
       - name: Send Photos via Apple Mail
         if: steps.filter_logic.outputs.send_mail == 'true'
-        uses: dawidd6/action-send-mail@42942bc2f8fba4e611b459a018967a6a7c78c68c
+        uses: dawidd6/action-send-mail@27bf7a883db6de205849f760badd38a1a3ce0dd0
         with:
           server_address: smtp.mail.me.com
           server_port: 587
