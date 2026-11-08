@@ -23,7 +23,9 @@ jobs:
         run: |
           TARGET_DIR="$RUNNER_TEMP/dtf-frieren-photos"
           ATTACHMENTS_DIR="$RUNNER_TEMP/dtf-frieren-attachments"
+
           mkdir -p "$TARGET_DIR" "$ATTACHMENTS_DIR"
+
           printf 'TARGET_DIR=%s\nATTACHMENTS_DIR=%s\n' \
             "$TARGET_DIR" "$ATTACHMENTS_DIR" >> "$GITHUB_ENV"
 
